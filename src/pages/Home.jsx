@@ -8,22 +8,22 @@ const Home = () => {
   return (
     <div className="min-h-[calc(100vh-280px)]">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-20">
+      <section className="bg-gradient-to-br from-pink-500 via-purple-600 to-orange-500 text-white py-20">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl font-bold mb-6">Welcome to EventHub</h1>
-          <p className="text-xl mb-8 text-primary-100">
-            Discover, organize, and attend amazing events in your area
+          <h1 className="text-5xl font-bold mb-6">🇳🇵 Namaste! Welcome to Nepal Events</h1>
+          <p className="text-xl mb-8 text-pink-100">
+            Discover and celebrate Nepal's vibrant culture, festivals, and events
           </p>
           <div className="flex gap-4 justify-center">
             <Link
               to="/events"
-              className="bg-white text-primary-700 px-8 py-3 rounded-lg font-semibold hover:bg-primary-50 transition"
+              className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-md"
             >
               Browse Events
             </Link>
             <Link
-              to="/signup"
-              className="bg-primary-700 text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary-900 transition border border-white"
+              to="/login"
+              className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition duration-300 shadow-md"
             >
               Get Started
             </Link>
@@ -35,34 +35,34 @@ const Home = () => {
       <section className="py-16 bg-slate-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-slate-800 mb-12">
-            Why Choose EventHub?
+            Why Choose Nepal Events?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
-              <div className="text-4xl mb-4">🎯</div>
+              <div className="text-4xl mb-4">🎉</div>
               <h3 className="text-xl font-semibold text-slate-800 mb-3">
-                Discover Events
+                Cultural Events
               </h3>
               <p className="text-slate-600">
-                Browse through a wide variety of events from technology conferences to art exhibitions.
+                Experience Nepal's rich traditions through Dashain, Tihar, and cultural festivals across cities.
               </p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
-              <div className="text-4xl mb-4">📅</div>
+              <div className="text-4xl mb-4">💵</div>
               <h3 className="text-xl font-semibold text-slate-800 mb-3">
-                Easy Registration
+                NPR Payment
               </h3>
               <p className="text-slate-600">
-                Register for events with just a few clicks and manage your bookings effortlessly.
+                Pay securely with eSewa, Khalti, and IME Pay - Nepal's trusted digital wallets.
               </p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
-              <div className="text-4xl mb-4">🚀</div>
+              <div className="text-4xl mb-4">🏞️</div>
               <h3 className="text-xl font-semibold text-slate-800 mb-3">
-                Organize Events
+                Nationwide Coverage
               </h3>
               <p className="text-slate-600">
-                Create and manage your own events with our powerful event management tools.
+                Discover events in Kathmandu, Pokhara, Chitwan, and all major cities of Nepal.
               </p>
             </div>
           </div>
@@ -76,7 +76,7 @@ const Home = () => {
             <h2 className="text-3xl font-bold text-slate-800">Upcoming Events</h2>
             <Link
               to="/events"
-              className="text-primary-600 hover:text-primary-700 font-semibold"
+              className="text-gray-600 hover:bg-gradient-to-r hover:from-purple-400 hover:via-pink-400 hover:to-orange-400 hover:bg-clip-text hover:text-transparent font-semibold transition-all duration-300"
             >
               View All →
             </Link>
@@ -86,7 +86,7 @@ const Home = () => {
               <Link
                 key={event.id}
                 to={`/events/${event.id}`}
-                className="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden"
+                className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
               >
                 <img
                   src={event.image}
@@ -94,10 +94,10 @@ const Home = () => {
                   className="w-full h-48 object-cover"
                 />
                 <div className="p-6">
-                  <span className="text-xs font-semibold text-primary-600 uppercase">
+                  <span className="inline-block bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">
                     {event.category}
                   </span>
-                  <h3 className="text-xl font-semibold text-slate-800 mt-2 mb-3">
+                  <h3 className="text-xl font-semibold text-slate-800 mt-3 mb-3">
                     {event.title}
                   </h3>
                   <div className="text-sm text-slate-600 space-y-1">

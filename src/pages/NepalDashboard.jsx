@@ -1,50 +1,37 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { mockUsers } from '../data/mockUsers';
 import { mockEvents } from '../data/nepalMockEvents';
-import { NEPAL_PROVINCES, EVENT_CATEGORIES, CURRENCY, PAYMENT_METHODS } from '../data/nepalData';
+import { mockUsers } from '../data/mockUsers';
+import { MAJOR_CITIES, NEPAL_PROVINCES, EVENT_CATEGORIES, CURRENCY, PAYMENT_METHODS } from '../data/nepalData';
 
-const Dashboard = () => {
+const NepalDashboard = () => {
   const { user } = useAuth();
-  const [selectedTab, setSelectedTab] = useState('overview');
+  const [selectedTimeRange, setSelectedTimeRange] = useState('all');
   const [selectedProvince, setSelectedProvince] = useState('all');
-  
-  // Use Nepal mock events data
-  const events = mockEvents;
-  
-  // Calculate comprehensive Nepal-specific statistics
+
+  // Calculate comprehensive statistics
   const stats = useMemo(() => {
-    // Financial metrics in NPR
+    const events = mockEvents;
+    const users = mockUsers;
+    
+    // Basic stats
     const totalRevenue = events.reduce((sum, event) => sum + (event.registeredCount * event.price), 0);
     const totalRegistrations = events.reduce((sum, event) => sum + event.registeredCount, 0);
     const totalCapacity = events.reduce((sum, event) => sum + event.capacity, 0);
     
-    // User analytics
-    const usersByRole = mockUsers.reduce((acc, user) => {
-      acc[user.role] = (acc[user.role] || 0) + 1;
-      return acc;
-    }, {});
-    
-    const verifiedOrganizers = mockUsers.filter(u => u.role === 'organizer' && u.verified).length;
-    const unverifiedOrganizers = mockUsers.filter(u => u.role === 'organizer' && !u.verified).length;
-    
     // Province-wise breakdown
     const provinceStats = NEPAL_PROVINCES.reduce((acc, province) => {
       const provinceEvents = events.filter(e => e.province === province.name);
-      const provinceUsers = mockUsers.filter(u => u.province === province.name);
-      
       acc[province.name] = {
         events: provinceEvents.length,
         registrations: provinceEvents.reduce((sum, e) => sum + e.registeredCount, 0),
-        revenue: provinceEvents.reduce((sum, e) => sum + (e.registeredCount * e.price), 0),
-        users: provinceUsers.length,
-        organizers: provinceUsers.filter(u => u.role === 'organizer').length
+        revenue: provinceEvents.reduce((sum, e) => sum + (e.registeredCount * e.price), 0)
       };
       return acc;
     }, {});
     
-    // Event category performance
+    // Category-wise breakdown
     const categoryStats = EVENT_CATEGORIES.reduce((acc, category) => {
       const categoryEvents = events.filter(e => e.category === category.name);
       acc[category.name] = {
@@ -56,12 +43,12 @@ const Dashboard = () => {
       return acc;
     }, {});
     
-    // Payment method distribution (Nepal-specific)
+    // Payment method simulation (mock data)
     const paymentStats = {
-      'eSewa': { transactions: Math.floor(totalRegistrations * 0.65), amount: totalRevenue * 0.65, percentage: 65 },
-      'Khalti': { transactions: Math.floor(totalRegistrations * 0.25), amount: totalRevenue * 0.25, percentage: 25 },
-      'IME Pay': { transactions: Math.floor(totalRegistrations * 0.08), amount: totalRevenue * 0.08, percentage: 8 },
-      'Bank Transfer': { transactions: Math.floor(totalRegistrations * 0.02), amount: totalRevenue * 0.02, percentage: 2 }
+      'eSewa': { transactions: 1247, amount: totalRevenue * 0.65, percentage: 65 },
+      'Khalti': { transactions: 523, amount: totalRevenue * 0.25, percentage: 25 },
+      'IME Pay': { transactions: 156, amount: totalRevenue * 0.08, percentage: 8 },
+      'Bank Transfer': { transactions: 45, amount: totalRevenue * 0.02, percentage: 2 }
     };
     
     // Top performing events
@@ -69,24 +56,60 @@ const Dashboard = () => {
       .sort((a, b) => (b.registeredCount * b.price) - (a.registeredCount * a.price))
       .slice(0, 5);
     
+    // Recent activity (mock timeline)
+    const recentActivity = [
+      { 
+        id: 1, 
+        type: 'registration', 
+        message: 'Ram Thapa registered for Nepal Tech Summit', 
+        time: '2 hours ago',
+        icon: '✅',
+        amount: 'Rs. 2,500'
+      },
+      { 
+        id: 2, 
+        type: 'event_created', 
+        message: 'New Tihar Festival event created in Pokhara', 
+        time: '4 hours ago',
+        icon: '🎭',
+        amount: null
+      },
+      { 
+        id: 3, 
+        type: 'payment', 
+        message: 'eSewa payment processed successfully', 
+        time: '6 hours ago',
+        icon: '💳',
+        amount: 'Rs. 1,200'
+      },
+      { 
+        id: 4, 
+        type: 'milestone', 
+        message: 'Momo Festival reached 3,000+ registrations', 
+        time: '1 day ago',
+        icon: '🎉',
+        amount: null
+      }
+    ];
+    
     return {
       totalEvents: events.length,
       upcomingEvents: events.filter(e => e.status === 'upcoming').length,
       totalRevenue,
       totalRegistrations,
       totalCapacity,
-      totalUsers: mockUsers.length,
       occupancyRate: (totalRegistrations / totalCapacity) * 100,
       avgRevenuePerEvent: totalRevenue / events.length,
-      usersByRole,
-      verifiedOrganizers,
-      unverifiedOrganizers,
+      totalOrganizers: users.filter(u => u.role === 'organizer').length,
+      totalAttendees: users.filter(u => u.role === 'attendee').length,
+      verifiedOrganizers: users.filter(u => u.role === 'organizer' && u.verified).length,
       provinceStats,
       categoryStats,
       paymentStats,
-      topEvents
+      topEvents,
+      recentActivity
     };
-  }, [selectedProvince]);
+  }, [selectedTimeRange, selectedProvince]);
 
   const StatCard = ({ title, value, subtitle, icon, color, trend }) => (
     <div className={`bg-gradient-to-br ${color} text-white rounded-lg shadow-lg p-6 relative overflow-hidden`}>
@@ -110,7 +133,7 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-[calc(100vh-280px)] bg-gray-50 py-8">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
@@ -148,7 +171,7 @@ const Dashboard = () => {
             subtitle={`${stats.totalRegistrations.toLocaleString()} registrations`}
             icon="💰"
             color="from-red-500 to-red-600"
-            trend={23.7}
+            trend={12.5}
           />
           <StatCard
             title="Active Events"
@@ -167,16 +190,16 @@ const Dashboard = () => {
             trend={5.7}
           />
           <StatCard
-            title="System Users"
-            value={stats.totalUsers}
-            subtitle={`${stats.unverifiedOrganizers} pending verification`}
+            title="Active Organizers"
+            value={stats.totalOrganizers}
+            subtitle={`${stats.verifiedOrganizers} verified`}
             icon="👥"
             color="from-purple-500 to-purple-600"
-            trend={15.3}
+            trend={-2.1}
           />
         </div>
 
-        {/* Province Performance & Payment Methods */}
+        {/* Province-wise Performance */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-6">
@@ -198,7 +221,7 @@ const Dashboard = () => {
                     <div className="w-20 bg-gray-200 rounded-full h-2">
                       <div 
                         className="bg-red-500 h-2 rounded-full"
-                        style={{ width: `${Math.min((data.revenue / stats.totalRevenue) * 100, 100)}%` }}
+                        style={{ width: `${(data.revenue / stats.totalRevenue) * 100}%` }}
                       ></div>
                     </div>
                   </div>
@@ -207,6 +230,36 @@ const Dashboard = () => {
             </div>
           </div>
 
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-800">Event Categories</h2>
+              <span className="text-2xl">📈</span>
+            </div>
+            <div className="space-y-4">
+              {Object.entries(stats.categoryStats)
+                .sort(([,a], [,b]) => b.events - a.events)
+                .slice(0, 6)
+                .map(([category, data]) => (
+                <div key={category} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">{data.icon}</span>
+                    <div>
+                      <p className="font-semibold text-gray-800">{category}</p>
+                      <p className="text-sm text-gray-600">{data.events} events</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-blue-600">{data.registrations}</p>
+                    <p className="text-xs text-gray-500">attendees</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Methods & Top Events */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">Payment Methods</h2>
@@ -231,16 +284,13 @@ const Dashboard = () => {
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
                     <span>{data.transactions} transactions</span>
-                    <span>{CURRENCY.symbol}{Math.round(data.amount).toLocaleString()}</span>
+                    <span>{CURRENCY.symbol}{data.amount.toLocaleString()}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Top Performing Events & Event Categories */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">Top Performing Events</h2>
@@ -272,32 +322,29 @@ const Dashboard = () => {
               ))}
             </div>
           </div>
+        </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-800">Event Categories</h2>
-              <span className="text-2xl">📈</span>
-            </div>
-            <div className="space-y-4">
-              {Object.entries(stats.categoryStats)
-                .sort(([,a], [,b]) => b.events - a.events)
-                .slice(0, 6)
-                .map(([category, data]) => (
-                <div key={category} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{data.icon}</span>
-                    <div>
-                      <p className="font-semibold text-gray-800 text-sm">{category}</p>
-                      <p className="text-xs text-gray-600">{data.events} events</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-blue-600 text-sm">{data.registrations}</p>
-                    <p className="text-xs text-gray-500">attendees</p>
+        {/* Recent Activity */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-800">Recent Activity</h2>
+            <span className="text-2xl">📋</span>
+          </div>
+          <div className="space-y-4">
+            {stats.recentActivity.map((activity) => (
+              <div key={activity.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <span className="text-2xl">{activity.icon}</span>
+                  <div>
+                    <p className="font-medium text-gray-800">{activity.message}</p>
+                    <p className="text-sm text-gray-500">{activity.time}</p>
                   </div>
                 </div>
-              ))}
-            </div>
+                {activity.amount && (
+                  <span className="font-bold text-green-600">{activity.amount}</span>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -305,4 +352,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default NepalDashboard;
