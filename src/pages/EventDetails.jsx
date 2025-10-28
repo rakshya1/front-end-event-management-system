@@ -1,88 +1,89 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEvents } from '../context/EventContext';
-import PaymentGateway from '../components/PaymentGateway';
 import Modal from '../components/Modal';
+import { useCart } from '../context/CartContext';
+
+const TICKET_ORDER = ['Normal', 'VIP', 'VVIP'];
 
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const { getEventById, registerForEvent, unregisterFromEvent, isUserRegistered } = useEvents();
-  const [showPayment, setShowPayment] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+  const { getEventById } = useEvents();
 
-  const event = getEventById(id);
-  const isRegistered = isAuthenticated && isUserRegistered(parseInt(id), user?.id);
-  const isFull = event?.registeredCount >= event?.capacity;
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [showToast, setShowToast] = useState('');
+  const [localTickets, setLocalTickets] = useState([]);
+
+const event = getEventById(id);
+  const { addItem } = useCart();
+
+  useEffect(() => {
+    if (event?.ticketTypes?.length) {
+      setLocalTickets(event.ticketTypes);
+    } else if (event) {
+      setLocalTickets([
+        { name: 'Normal', price: Math.max(0, event.price), availability: Math.max(0, Math.floor(event.capacity * 0.7)), perks: ['General admission'] },
+        { name: 'VIP', price: Math.max(0, Math.floor(event.price * 2)), availability: Math.max(0, Math.floor(event.capacity * 0.2)), perks: ['Reserved/VIP seating'] },
+        { name: 'VVIP', price: Math.max(0, Math.floor(event.price * 3)), availability: Math.max(0, Math.floor(event.capacity * 0.1)), perks: ['Meet & greet', 'Exclusive access'] }
+      ]);
+    }
+  }, [event]);
+
+  const orderedTickets = useMemo(() => {
+    return [...localTickets].sort((a, b) => TICKET_ORDER.indexOf(a.name) - TICKET_ORDER.indexOf(b.name));
+  }, [localTickets]);
 
   if (!event) {
     return (
       <div className="min-h-[calc(100vh-280px)] flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Event not found</h2>
-          <button
-            onClick={() => navigate('/events')}
-            className="text-primary-600 hover:text-primary-700"
-          >
-            Back to Events
-          </button>
+          <button onClick={() => navigate('/events')} className="text-primary-600 hover:text-primary-700">Back to Events</button>
         </div>
       </div>
     );
   }
 
-  const handleRegister = () => {
+  const isPast = event.status === 'past';
+
+  const openBooking = (ticket) => {
     if (!isAuthenticated) {
+      alert('Please login to continue.');
       navigate('/login');
       return;
     }
-
-    // Check if user is attendee - only attendees can pay for events
-    if (user.role !== 'attendee') {
-      alert(`Access Denied: Only attendees can register and pay for events. Your role: ${user.role}`);
+    const allowed = ['attendee', 'organizer', 'admin'];
+    if (!allowed.includes(user.role)) {
+      alert('Your account is not permitted to book tickets.');
       return;
     }
-
-    if (event.price === 0) {
-      // Free event - register directly
-      const result = registerForEvent(event.id, user.id, user.name, user.email);
-      if (result.success) {
-        console.log('✅ Registration successful for free event');
-        setShowConfirmation(true);
-      } else {
-        alert(result.error);
-      }
-    } else {
-      // Paid event - show payment gateway (only for attendees)
-      setShowPayment(true);
-    }
+    setSelectedTicket(ticket);
+    setQuantity(1);
+    setBookingOpen(true);
   };
 
-  const handlePaymentSuccess = () => {
-    const result = registerForEvent(event.id, user.id, user.name, user.email);
-    setShowPayment(false);
-    
-    if (result.success) {
-      console.log('✅ Payment successful! Registration confirmed.');
-      console.log('📧 Confirmation email sent to:', user.email);
-      setShowConfirmation(true);
-    } else {
-      alert(result.error);
-    }
-  };
+  const totalPrice = selectedTicket ? selectedTicket.price * quantity : 0;
 
-  const handleUnregister = () => {
-    if (window.confirm('Are you sure you want to unregister from this event?')) {
-      unregisterFromEvent(event.id, user.id);
-      alert('Successfully unregistered from the event');
-    }
+  const confirmBooking = () => {
+    // Simulated eSewa payment success
+    setLocalTickets((prev) => prev.map(t => t.name === selectedTicket.name ? { ...t, availability: Math.max(0, t.availability - quantity) } : t));
+    setBookingOpen(false);
+    setShowToast('Booking confirmed!');
+    setTimeout(() => setShowToast(''), 3000);
   };
 
   return (
     <div className="min-h-[calc(100vh-280px)] bg-slate-50 py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
+      {showToast && (
+        <div className="fixed top-20 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded shadow">{showToast}</div>
+      )}
+
+      <div className="container mx-auto px-4 max-w-5xl">
         <button
           onClick={() => navigate('/events')}
           className="text-gray-600 hover:bg-gradient-to-r hover:from-purple-400 hover:via-pink-400 hover:to-orange-400 hover:bg-clip-text hover:text-transparent mb-6 flex items-center transition-all duration-300"
@@ -91,34 +92,37 @@ const EventDetails = () => {
         </button>
 
         <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-          <img
-            src={event.image}
-            alt={event.title}
-            className="w-full h-96 object-cover"
-          />
+          <img src={event.image} alt={event.title} className="w-full h-96 object-cover" />
 
           <div className="p-8">
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
               <div>
                 <span className="inline-block bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white text-sm font-semibold px-3 py-1 rounded-full uppercase">
                   {event.category}
                 </span>
                 <h1 className="text-4xl font-bold text-slate-800 mt-3">{event.title}</h1>
-                <p className="text-2xl font-bold text-blue-600 mt-2">
-                  {event.price === 0 ? 'FREE' : `NPR ${event.price.toLocaleString()}`}
-                </p>
+                <p className="text-sm text-slate-500 mt-1">Organized by {event.organizer}</p>
               </div>
-              <span className={`px-4 py-2 rounded-lg font-semibold ${
-                event.status === 'upcoming' 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-slate-100 text-slate-600'
-              }`}>
-                {event.status}
-              </span>
+
+              <div className="flex items-center gap-3">
+                <span className={`px-4 py-2 rounded-lg font-semibold ${event.status === 'upcoming' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                  {event.status}
+                </span>
+                {isAuthenticated && (
+                  <div className="flex gap-2">
+                    {user.role === 'organizer' && (
+<button onClick={() => navigate(`/events/${event.id}/edit`)} className="px-3 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 text-sm">Edit Event</button>
+                    )}
+                    {(user.role === 'admin' || user.role === 'organizer') && (
+                      <button onClick={() => navigate('/attendees')} className="px-3 py-2 rounded-lg text-white bg-slate-700 hover:bg-slate-800 text-sm">View Registrations</button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="space-y-4 md:col-span-2">
                 <div className="flex items-start">
                   <span className="text-2xl mr-3">📅</span>
                   <div>
@@ -126,136 +130,130 @@ const EventDetails = () => {
                     <p className="text-slate-800 font-medium">{event.date} at {event.time}</p>
                   </div>
                 </div>
-
                 <div className="flex items-start">
-                  <span className="text-2xl mr-3">📍</span>
+                  <span className="text-2xl mr-3">🏛️</span>
                   <div>
-                    <p className="text-sm text-slate-500">Location</p>
+                    <p className="text-sm text-slate-500">Venue</p>
                     <p className="text-slate-800 font-medium">{event.location}</p>
                   </div>
                 </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">About This Event</h2>
+                  <p className="text-slate-600 leading-relaxed">{event.description}</p>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-start">
-                  <span className="text-2xl mr-3">👤</span>
-                  <div>
-                    <p className="text-sm text-slate-500">Organizer</p>
-                    <p className="text-slate-800 font-medium">{event.organizer}</p>
-                  </div>
+              <div className="space-y-2">
+                <p className="text-sm text-slate-500">Capacity</p>
+                <p className="text-slate-800 font-medium">{event.registeredCount} / {event.capacity} registered</p>
+                <div className="w-full bg-slate-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(event.registeredCount / event.capacity) * 100}%` }} />
                 </div>
+              </div>
+            </div>
 
-                <div className="flex items-start">
-                  <span className="text-2xl mr-3">🎫</span>
-                  <div>
-                    <p className="text-sm text-slate-500">Capacity</p>
-                    <p className="text-slate-800 font-medium">
-                      {event.registeredCount} / {event.capacity} registered
-                    </p>
-                    <div className="w-full bg-slate-200 rounded-full h-2 mt-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${(event.registeredCount / event.capacity) * 100}%` }}
-                      />
+            {/* Ticket Types */}
+            <div className="mt-8">
+              <h2 className="text-2xl font-bold text-slate-800 mb-4">Tickets</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {orderedTickets.map((ticket) => (
+                  <div key={ticket.name} className="border rounded-lg p-5 hover:shadow-md transition bg-white">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-semibold text-slate-800">{ticket.name}</h3>
+                      <span className={`text-xs px-2 py-1 rounded-full ${ticket.availability > 0 ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                        {ticket.availability > 0 ? `${ticket.availability} left` : 'Sold out'}
+                      </span>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-slate-800 mb-4">About This Event</h2>
-              <p className="text-slate-600 leading-relaxed">{event.description}</p>
-            </div>
-
-            {event.status === 'upcoming' && (
-              <div className="flex gap-4">
-                {isAuthenticated && user.role === 'attendee' ? (
-                  isRegistered ? (
+                    <p className="text-blue-600 font-bold mb-2">NPR {ticket.price.toLocaleString()}</p>
+                    <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1 mb-4">
+                      {ticket.perks?.map((perk, idx) => (
+                        <li key={idx}>{perk}</li>
+                      ))}
+                    </ul>
                     <button
-                      onClick={handleUnregister}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition"
-                    >
-                      Unregister from Event
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleRegister}
-                      disabled={isFull}
-                      className={`flex-1 font-semibold py-3 rounded-lg transition shadow-md ${
-                        isFull
+                      disabled={ticket.availability === 0 || isPast}
+                      onClick={() => openBooking(ticket)}
+                      className={`w-full py-2 rounded-lg font-semibold transition ${
+                        ticket.availability === 0 || isPast
                           ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 hover:shadow-lg text-white'
+                          : 'bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white hover:shadow-md'
                       }`}
                     >
-                      {isFull ? 'Event Full' : event.price === 0 ? 'Register for Free' : `Register - NPR ${event.price.toLocaleString()}`}
+                      Book Now
                     </button>
-                  )
-                ) : isAuthenticated && user.role !== 'attendee' ? (
-                  <div className="flex-1 bg-gray-200 text-gray-600 font-semibold py-3 rounded-lg text-center">
-                    Only attendees can register for events (Your role: {user.role})
                   </div>
-                ) : (
-                  <button
-                    onClick={() => navigate('/login')}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition shadow-md"
-                  >
-                    Login to Register
-                  </button>
-                )}
+                ))}
               </div>
-            )}
-
-            {!isAuthenticated && event.status === 'upcoming' && (
-              <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                <p className="text-yellow-800 font-medium">
-                  🔒 Please <button onClick={() => navigate('/login')} className="text-blue-600 hover:text-transparent hover:bg-gradient-to-r hover:from-purple-400 hover:via-pink-400 hover:to-orange-400 hover:bg-clip-text underline transition-all duration-300">login</button> or <button onClick={() => navigate('/signup')} className="text-blue-600 hover:text-transparent hover:bg-gradient-to-r hover:from-purple-400 hover:via-pink-400 hover:to-orange-400 hover:bg-clip-text underline transition-all duration-300">sign up</button> to register for this event
-                </p>
-              </div>
-            )}
+            </div>
           </div>
         </div>
 
-        {/* Payment Gateway Modal */}
-        {event && (
-          <PaymentGateway
-            isOpen={showPayment}
-            onClose={() => setShowPayment(false)}
-            event={event}
-            onPaymentSuccess={handlePaymentSuccess}
-          />
-        )}
-
-        {/* Confirmation Modal */}
+        {/* Booking Modal */}
         <Modal
-          isOpen={showConfirmation}
-          onClose={() => setShowConfirmation(false)}
-          title="✅ Registration Confirmed!"
+          isOpen={bookingOpen}
+          onClose={() => setBookingOpen(false)}
+          title={selectedTicket ? `Book ${selectedTicket.name} Ticket` : 'Book Ticket'}
           actions={
-            <button
-              onClick={() => {
-                setShowConfirmation(false);
-                navigate('/dashboard');
-              }}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-              Go to Dashboard
-            </button>
+            <>
+              <button onClick={() => setBookingOpen(false)} className="px-4 py-2 text-slate-600 hover:text-slate-800">Cancel</button>
+              <button onClick={() => {
+                if (!selectedTicket) return;
+                addItem({
+                  eventId: event.id,
+                  eventTitle: event.title,
+                  ticketName: selectedTicket.name,
+                  price: selectedTicket.price,
+                  quantity,
+                  image: event.image,
+                  date: event.date,
+                  time: event.time,
+                  location: event.location,
+                  organizer: event.organizer,
+                });
+                setBookingOpen(false);
+              }} className="px-6 py-2 bg-slate-200 rounded-lg hover:bg-slate-300">Add to Cart</button>
+              <button onClick={confirmBooking} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Pay with eSewa</button>
+            </>
           }
         >
-          <div className="text-center">
-            <div className="text-6xl mb-4">🎉</div>
-            <h3 className="text-xl font-semibold text-slate-800 mb-2">
-              You're all set for {event?.title}!
-            </h3>
-            <p className="text-slate-600 mb-4">
-              A confirmation email has been sent to {user?.email}
-            </p>
-            <div className="bg-slate-50 p-4 rounded-lg text-left text-sm">
-              <p>📅 <strong>Date:</strong> {event?.date} at {event?.time}</p>
-              <p className="mt-2">📍 <strong>Location:</strong> {event?.location}</p>
+          {selectedTicket && (
+            <div className="space-y-4">
+              <div className="bg-slate-50 p-4 rounded-lg">
+                <div className="flex justify-between">
+                  <span className="text-slate-700">Ticket Type</span>
+                  <span className="font-semibold">{selectedTicket.name}</span>
+                </div>
+                <div className="flex justify-between mt-2">
+                  <span className="text-slate-700">Price</span>
+                  <span className="font-semibold">NPR {selectedTicket.price.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Quantity</label>
+                <div className="flex items-center gap-2">
+                  <button className="px-3 py-2 bg-slate-200 rounded" onClick={() => setQuantity(q => Math.max(1, q - 1))} disabled={quantity <= 1}>-</button>
+                  <input
+                    type="number"
+                    className="w-20 text-center border rounded px-2 py-2"
+                    min={1}
+                    max={selectedTicket.availability}
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, Math.min(selectedTicket.availability, Number(e.target.value) || 1)))}
+                  />
+                  <button className="px-3 py-2 bg-slate-200 rounded" onClick={() => setQuantity(q => Math.min(selectedTicket.availability, q + 1))} disabled={quantity >= selectedTicket.availability}>+</button>
+                  <span className="text-xs text-slate-500">Available: {selectedTicket.availability}</span>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 flex justify-between text-lg font-semibold">
+                <span>Total</span>
+                <span className="text-red-600">NPR {totalPrice.toLocaleString()}</span>
+              </div>
+
+              <p className="text-xs text-slate-500 text-center">This is a simulated eSewa payment for demo purposes.</p>
             </div>
-          </div>
+          )}
         </Modal>
       </div>
     </div>

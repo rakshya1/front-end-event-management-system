@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
 const Navigation = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { items } = useCart();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -15,9 +17,8 @@ const Navigation = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2 text-2xl font-bold transition" style={{ color: '#1f2937' }}>
-            <span>🇳🇵</span>
             <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 bg-clip-text text-transparent">
-              NepEvent
+              Hamro Event
             </span>
           </Link>
 
@@ -35,9 +36,9 @@ const Navigation = () => {
               </Link>
             )}
 
-            {isAuthenticated && user.role === 'admin' && (
+{isAuthenticated && user.role === 'admin' && (
               <>
-                <Link to="/dashboard" className="transition hover:bg-gradient-to-r hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:bg-clip-text hover:text-transparent" style={{ color: '#6b7280' }}>
+                <Link to="/admin" className="transition hover:bg-gradient-to-r hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:bg-clip-text hover:text-transparent" style={{ color: '#6b7280' }}>
                   Dashboard
                 </Link>
                 <Link to="/attendees" className="transition hover:bg-gradient-to-r hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:bg-clip-text hover:text-transparent" style={{ color: '#6b7280' }}>
@@ -49,6 +50,19 @@ const Navigation = () => {
             {isAuthenticated && user.role === 'organizer' && (
               <Link to="/attendees" className="transition hover:bg-gradient-to-r hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:bg-clip-text hover:text-transparent" style={{ color: '#6b7280' }}>
                 My Attendees
+              </Link>
+            )}
+
+            {isAuthenticated && (
+              <Link to="/cart" className="relative">
+                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200">
+                  🛒
+                </span>
+                {items.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {items.length}
+                  </span>
+                )}
               </Link>
             )}
 

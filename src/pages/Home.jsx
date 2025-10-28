@@ -1,18 +1,24 @@
-import { Link } from 'react-router-dom';
-import { useEvents } from '../context/EventContext';
+import { Link } from "react-router-dom";
+import { useEvents } from "../context/EventContext";
 
 const Home = () => {
   const { events } = useEvents();
-  const upcomingEvents = events.filter(e => e.status === 'upcoming').slice(0, 3);
+  const upcomingEvents = events
+    .filter((e) => e.status === "upcoming")
+    .slice(0, 3);
 
   return (
     <div className="min-h-[calc(100vh-280px)]">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-pink-500 via-purple-600 to-orange-500 text-white py-20">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl font-bold mb-6">🇳🇵 Namaste! Welcome to Nepal Events</h1>
+          <h1 className="text-5xl font-bold mb-6">
+            {" "}
+            Namaste! Welcome to Hamro Events
+          </h1>
           <p className="text-xl mb-8 text-pink-100">
-            Discover and celebrate Nepal's vibrant culture, festivals, and events
+            Discover and celebrate Nepal's vibrant culture, festivals, and
+            events
           </p>
           <div className="flex gap-4 justify-center">
             <Link
@@ -35,7 +41,7 @@ const Home = () => {
       <section className="py-16 bg-slate-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-slate-800 mb-12">
-            Why Choose Nepal Events?
+            Why Choose Hamro Events?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
@@ -44,7 +50,8 @@ const Home = () => {
                 Cultural Events
               </h3>
               <p className="text-slate-600">
-                Experience Nepal's rich traditions through Dashain, Tihar, and cultural festivals across cities.
+                Experience Nepal's rich traditions through Dashain, Tihar, and
+                cultural festivals across cities.
               </p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
@@ -53,7 +60,8 @@ const Home = () => {
                 NPR Payment
               </h3>
               <p className="text-slate-600">
-                Pay securely with eSewa, Khalti, and IME Pay - Nepal's trusted digital wallets.
+                Pay securely with eSewa, Khalti, and IME Pay - Nepal's trusted
+                digital wallets.
               </p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
@@ -62,7 +70,8 @@ const Home = () => {
                 Nationwide Coverage
               </h3>
               <p className="text-slate-600">
-                Discover events in Kathmandu, Pokhara, Chitwan, and all major cities of Nepal.
+                Discover events in Kathmandu, Pokhara, Chitwan, and all major
+                cities of Nepal.
               </p>
             </div>
           </div>
@@ -73,7 +82,9 @@ const Home = () => {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold text-slate-800">Upcoming Events</h2>
+            <h2 className="text-3xl font-bold text-slate-800">
+              Upcoming Events
+            </h2>
             <Link
               to="/events"
               className="text-gray-600 hover:bg-gradient-to-r hover:from-purple-400 hover:via-pink-400 hover:to-orange-400 hover:bg-clip-text hover:text-transparent font-semibold transition-all duration-300"
@@ -82,7 +93,7 @@ const Home = () => {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {upcomingEvents.map(event => (
+            {upcomingEvents.map((event) => (
               <Link
                 key={event.id}
                 to={`/events/${event.id}`}

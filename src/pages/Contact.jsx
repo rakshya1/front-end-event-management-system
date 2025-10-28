@@ -49,7 +49,7 @@ const Contact = () => {
             Contact Us
           </h1>
           <p className="text-xl text-gray-600 mb-4">
-            We'd love to hear from you! Whether you're an event organizer, attendee, or just curious about NepEvent, reach out to us anytime.
+            We'd love to hear from you! Whether you're an event organizer, attendee, or just curious about Hamro Event, reach out to us anytime.
           </p>
           <div className="w-24 h-1 bg-gradient-to-r from-red-500 to-blue-500 mx-auto"></div>
         </div>

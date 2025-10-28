@@ -16,11 +16,11 @@ const Footer = () => {
           <div className="lg:col-span-1">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-xl flex items-center justify-center text-2xl shadow-lg">
-                🇳🇵
+                
               </div>
               <h3 className="text-3xl font-bold">
                 <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                  NepEvent
+                  Hamro Event
                 </span>
               </h3>
             </div>
@@ -171,7 +171,7 @@ const Footer = () => {
           <div className="text-center max-w-2xl mx-auto">
             <h4 className="text-2xl font-bold mb-4">
               <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                Stay Updated with Nepal Events
+                Stay Updated with Hamro Events
               </span>
             </h4>
             <p className="text-slate-300 mb-6">Get notified about the latest cultural events, festivals, and celebrations happening across Nepal.</p>
@@ -192,7 +192,7 @@ const Footer = () => {
         <div className="mt-12 pt-8 border-t border-slate-700">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-slate-400 text-sm flex items-center space-x-2">
-              <span>© 2024 NepEvent. All rights reserved.</span>
+              <span>© 2024 Hamro Event. All rights reserved.</span>
               <span className="hidden md:inline">•</span>
               <span className="flex items-center space-x-1">
                 <span>Made with</span>
