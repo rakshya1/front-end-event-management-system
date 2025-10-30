@@ -1,11 +1,17 @@
 import { Link } from "react-router-dom";
-import { useEvents } from "../context/EventContext";
+// import { useEvents } from "../context/EventContext";
+import { useEvents } from "../hooks/useEvents";
 
 const Home = () => {
-  const { events } = useEvents();
-  const upcomingEvents = events
-    .filter((e) => e.status === "upcoming")
-    .slice(0, 3);
+  const { events, loading, error } = useEvents();
+
+  if (loading) return <p className="text-center py-20">Loading events...</p>;
+  if (error) return <p className="text-center py-20 text-red-500">{error}</p>;
+
+  // const upcomingEvents = events
+  //   .filter((e) => e.status === "upcoming")
+  //   .slice(0, 3);
+    const upcomingEvents = events;
 
   return (
     <div className="min-h-[calc(100vh-280px)]">
@@ -106,14 +112,14 @@ const Home = () => {
                 />
                 <div className="p-6">
                   <span className="inline-block bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase">
-                    {event.category}
+                    {event.category?.name}
                   </span>
                   <h3 className="text-xl font-semibold text-slate-800 mt-3 mb-3">
                     {event.title}
                   </h3>
                   <div className="text-sm text-slate-600 space-y-1">
-                    <p>📅 {event.date}</p>
-                    <p>📍 {event.location}</p>
+                    <p>📅 {event.start_time}</p>
+                    <p>📍 {event.venue}</p>
                   </div>
                 </div>
               </Link>

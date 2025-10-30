@@ -12,7 +12,7 @@ const EventCard = ({ event }) => {
           />
           <div className="absolute top-3 right-3">
             <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white px-3 py-1 rounded-full text-sm font-semibold">
-              {event.category}
+              {event.category?.name}
             </span>
           </div>
           {event.price === 0 && (
@@ -38,7 +38,7 @@ const EventCard = ({ event }) => {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span>{event.date} at {event.time}</span>
+              <span>{event.start_time} at {event.time}</span>
             </div>
             
             <div className="flex items-center text-slate-700 text-sm">
@@ -46,7 +46,7 @@ const EventCard = ({ event }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span className="line-clamp-1">{event.location}</span>
+              <span className="line-clamp-1">{event.venue}</span>
             </div>
             
             <div className="flex items-center justify-between pt-2 border-t border-slate-200">
@@ -54,7 +54,7 @@ const EventCard = ({ event }) => {
                 NPR {event.price.toLocaleString()}
               </span>
               <span className="text-sm text-slate-500">
-                {event.registeredCount}/{event.capacity} registered
+                {event.tickets_count}/{event.total_seats} registered
               </span>
             </div>
           </div>

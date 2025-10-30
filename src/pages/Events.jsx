@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useEvents } from '../context/EventContext';
 import SearchBar from '../components/SearchBar';
 import FilterPanel from '../components/FilterPanel';
 import EventCard from '../components/EventCard';
+import { useEvents } from '../hooks/useEvents';
 
 const Events = () => {
   const { user } = useAuth();
-  const { events } = useEvents();
+  const { events, loading, error } = useEvents(); // fetch from API
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     category: '',
@@ -17,28 +17,39 @@ const Events = () => {
     date: '',
   });
 
+  // Show loading state
+  if (loading) {
+    return <p className="text-center py-20">Loading events...</p>;
+  }
+
+  // Show error state
+  if (error) {
+    return <p className="text-center py-20 text-red-500">{error}</p>;
+  }
+
   // Apply all filters
   const filteredEvents = events.filter((event) => {
     // Search filter
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.location.toLowerCase().includes(searchTerm.toLowerCase());
+      (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (event.venue && event.venue.toLowerCase().includes(searchTerm.toLowerCase()));
 
     if (!matchesSearch) return false;
 
     // Category filter
-    if (filters.category && event.category !== filters.category) return false;
+    if (filters.category && event.category?.name !== filters.category) return false;
 
     // Location filter
-    if (filters.location && !event.location.includes(filters.location)) return false;
+    if (filters.location && !(event.venue || '').includes(filters.location)) return false;
 
     // Price filter
-    if (filters.minPrice && event.price < parseFloat(filters.minPrice)) return false;
-    if (filters.maxPrice && event.price > parseFloat(filters.maxPrice)) return false;
+    const price = parseFloat(event.discount_cost || event.regular_cost || 0);
+    if (filters.minPrice && price < parseFloat(filters.minPrice)) return false;
+    if (filters.maxPrice && price > parseFloat(filters.maxPrice)) return false;
 
     // Date filter
-    if (filters.date && event.date !== filters.date) return false;
+    if (filters.date && event.start_date !== filters.date) return false;
 
     return true;
   });
@@ -46,6 +57,7 @@ const Events = () => {
   return (
     <div className="min-h-[calc(100vh-280px)] bg-slate-50 py-12">
       <div className="container mx-auto px-4">
+        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-slate-800">🎉 Discover Events</h1>
           {!user && (
