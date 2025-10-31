@@ -11,7 +11,7 @@ const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const { getEventById } = useEvents();
+  const { getEventById, deleteEvent } = useEvents();
 
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -19,7 +19,7 @@ const EventDetails = () => {
   const [showToast, setShowToast] = useState('');
   const [localTickets, setLocalTickets] = useState([]);
 
-const event = getEventById(id);
+  const event = getEventById(id);
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -50,6 +50,7 @@ const event = getEventById(id);
   }
 
   const isPast = event.status === 'past';
+  const isOwner = isAuthenticated && user.role === 'organizer' && user.id === event.organizerId;
 
   const openBooking = (ticket) => {
     if (!isAuthenticated) {
@@ -75,6 +76,15 @@ const event = getEventById(id);
     setBookingOpen(false);
     setShowToast('Booking confirmed!');
     setTimeout(() => setShowToast(''), 3000);
+  };
+
+  const onDelete = () => {
+    if (!isOwner) return;
+    const ok = confirm('Delete this event? This action cannot be undone.');
+    if (!ok) return;
+    deleteEvent(event.id);
+    alert('Event deleted');
+    navigate('/events');
   };
 
   return (
@@ -110,10 +120,13 @@ const event = getEventById(id);
                 </span>
                 {isAuthenticated && (
                   <div className="flex gap-2">
-                    {user.role === 'organizer' && (
-<button onClick={() => navigate(`/events/${event.id}/edit`)} className="px-3 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 text-sm">Edit Event</button>
+                    {isOwner && (
+                      <>
+                        <button onClick={() => navigate(`/events/${event.id}/edit`)} className="px-3 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 text-sm">Edit Event</button>
+                        <button onClick={onDelete} className="px-3 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700 text-sm">Delete</button>
+                      </>
                     )}
-                    {(user.role === 'admin' || user.role === 'organizer') && (
+                    {(user.role === 'admin' || isOwner) && (
                       <button onClick={() => navigate('/attendees')} className="px-3 py-2 rounded-lg text-white bg-slate-700 hover:bg-slate-800 text-sm">View Registrations</button>
                     )}
                   </div>

@@ -1,6 +1,7 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { mockEvents } from '../data/mockEvents';
 import { mockAttendees } from '../data/mockAttendees';
+import { api } from '../services/api';
 
 const EventContext = createContext();
 
@@ -15,9 +16,40 @@ export const useEvents = () => {
 export const EventProvider = ({ children }) => {
   const [events, setEvents] = useState(mockEvents);
   const [attendees, setAttendees] = useState(mockAttendees);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+
+  // Fetch events from backend if available
+  useEffect(() => {
+    const load = async () => {
+      setLoadingEvents(true);
+      try {
+        const data = await api.get('/events');
+        if (Array.isArray(data) && data.length) {
+          setEvents(data.map(mapBackendEvent));
+        }
+      } catch (e) {
+        // silent fallback to mocks
+        console.warn('Using mock events. Backend fetch failed:', e?.message);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+    load();
+  }, []);
 
   const getEventById = (id) => {
-    return events.find(event => event.id === parseInt(id));
+    const local = events.find(event => event.id === parseInt(id));
+    return local;
+  };
+
+  const fetchEventById = async (id) => {
+    try {
+      const data = await api.get(`/events/${id}`);
+      return mapBackendEvent(data);
+    } catch (e) {
+      console.warn('Failed to fetch event by id', e?.message);
+      return null;
+    }
   };
 
   const getEventsByOrganizer = (organizerId) => {
@@ -38,9 +70,9 @@ export const EventProvider = ({ children }) => {
   };
 
   const updateEvent = (id, eventData) => {
-    setEvents(events.map(event => 
-      event.id === id ? { ...event, ...eventData } : event
-    ));
+    setEvents(events.map(event => event.id === id ? { ...event, ...eventData } : event));
+    // Try backend update; ignore errors for now
+    api.put(`/events/${id}`, eventData).catch(()=>{});
   };
 
   const deleteEvent = (id) => {
@@ -116,7 +148,9 @@ export const EventProvider = ({ children }) => {
   const value = {
     events,
     attendees,
+    loadingEvents,
     getEventById,
+    fetchEventById,
     getEventsByOrganizer,
     createEvent,
     updateEvent,
