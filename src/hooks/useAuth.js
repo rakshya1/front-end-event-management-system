@@ -46,7 +46,7 @@ const useAuth = () => {
       const response = await authApi.login(credentials);
 
       // 💾 Save token
-      const newToken = response.data?.token;
+      const newToken = response.data?.data?.token;
       if (newToken) {
         localStorage.setItem(TOKEN_KEY, newToken);
         setToken(newToken);
