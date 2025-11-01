@@ -10,7 +10,7 @@ const useAuth = () => {
   const [error, setError] = useState(null);
   const [token, setToken] = useState(localStorage.getItem(TOKEN_KEY) || null);
 
-  // 🧠 Attach token to axios headers automatically
+  // 🧠 Automatically attach token to axios headers
   useEffect(() => {
     if (token) {
       axiosClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -19,6 +19,7 @@ const useAuth = () => {
     }
   }, [token]);
 
+  // 🔄 Fetch authenticated user profile
   const fetchUser = useCallback(async () => {
     if (!token) {
       setLoading(false);
@@ -40,12 +41,12 @@ const useAuth = () => {
     fetchUser();
   }, [fetchUser]);
 
+  // 🔐 Login handler
   const login = async (credentials) => {
     try {
       setLoading(true);
       const response = await authApi.login(credentials);
 
-      // 💾 Save token
       const newToken = response.data?.data?.token;
       if (newToken) {
         localStorage.setItem(TOKEN_KEY, newToken);
@@ -62,16 +63,24 @@ const useAuth = () => {
     }
   };
 
+  // 🧾 Register handler — now mirrors login()
   const register = async (data) => {
     try {
       setLoading(true);
       const response = await authApi.register(data);
-      const newToken = response.data?.token;
+
+      // some APIs send token under different paths
+      const newToken =
+        response.data?.data?.token || response.data?.token || null;
+
       if (newToken) {
         localStorage.setItem(TOKEN_KEY, newToken);
         setToken(newToken);
       }
+
+      // ✅ fetch user profile using token
       await fetchUser();
+
       return response.data;
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
@@ -81,13 +90,13 @@ const useAuth = () => {
     }
   };
 
+  // 🚪 Logout handler
   const logout = async () => {
     try {
       await authApi.logout();
     } catch (err) {
       console.warn("Logout error:", err);
     } finally {
-      // 🧹 Clear token + user
       localStorage.removeItem(TOKEN_KEY);
       setToken(null);
       setUser(null);

@@ -1,9 +1,13 @@
-import { nepalCities, eventCategories } from '../data/mockEvents';
+import { useFilters } from "../hooks/useEventFilters";
 
 const FilterPanel = ({ filters, onFilterChange }) => {
+  const { categories, priceRange, loading } = useFilters();
+
   const handleFilterChange = (filterType, value) => {
     onFilterChange({ ...filters, [filterType]: value });
   };
+
+  if (loading) return <p>Loading filters...</p>;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md space-y-6">
@@ -20,29 +24,8 @@ const FilterPanel = ({ filters, onFilterChange }) => {
           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
         >
           <option value="">All Categories</option>
-          {eventCategories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Location Filter */}
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          Location
-        </label>
-        <select
-          value={filters.location || ''}
-          onChange={(e) => handleFilterChange('location', e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-        >
-          <option value="">All Locations</option>
-          {nepalCities.map((city) => (
-            <option key={city} value={city}>
-              {city}
-            </option>
+          {categories.map((category) => (
+            <option key={category} value={category}>{category}</option>
           ))}
         </select>
       </div>
@@ -56,7 +39,7 @@ const FilterPanel = ({ filters, onFilterChange }) => {
           <div>
             <input
               type="number"
-              placeholder="Min"
+              placeholder={priceRange.min}
               value={filters.minPrice || ''}
               onChange={(e) => handleFilterChange('minPrice', e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
@@ -65,7 +48,7 @@ const FilterPanel = ({ filters, onFilterChange }) => {
           <div>
             <input
               type="number"
-              placeholder="Max"
+              placeholder={priceRange.max}
               value={filters.maxPrice || ''}
               onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
@@ -89,15 +72,7 @@ const FilterPanel = ({ filters, onFilterChange }) => {
 
       {/* Clear Filters Button */}
       <button
-        onClick={() =>
-          onFilterChange({
-            category: '',
-            location: '',
-            minPrice: '',
-            maxPrice: '',
-            date: '',
-          })
-        }
+        onClick={() => onFilterChange({ category: '', location: '', minPrice: '', maxPrice: '', date: '' })}
         className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200"
       >
         Clear Filters
