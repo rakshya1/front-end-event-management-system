@@ -1,274 +1,213 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useEvents } from '../context/EventContext';
-import Modal from '../components/Modal';
-import { useCart } from '../context/CartContext';
-
-const TICKET_ORDER = ['Normal', 'VIP', 'VVIP'];
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import eventApi from "../api/eventApi";
+import { useTickets } from "../hooks/useTickets";
+import { useAuth } from "../context/AuthContext";
 
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
-  const { getEventById, deleteEvent } = useEvents();
+  const { isAuthenticated } = useAuth();
 
-  const [bookingOpen, setBookingOpen] = useState(false);
+  const { tickets, loading: ticketLoading, error: ticketError } = useTickets(id);
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [showToast, setShowToast] = useState('');
-  const [localTickets, setLocalTickets] = useState([]);
+  const [showModal, setShowModal] = useState(false);
 
-  const event = getEventById(id);
-  const { addItem } = useCart();
-
+  // ✅ Fetch event details from API
   useEffect(() => {
-    if (event?.ticketTypes?.length) {
-      setLocalTickets(event.ticketTypes);
-    } else if (event) {
-      setLocalTickets([
-        { name: 'Normal', price: Math.max(0, event.price), availability: Math.max(0, Math.floor(event.capacity * 0.7)), perks: ['General admission'] },
-        { name: 'VIP', price: Math.max(0, Math.floor(event.price * 2)), availability: Math.max(0, Math.floor(event.capacity * 0.2)), perks: ['Reserved/VIP seating'] },
-        { name: 'VVIP', price: Math.max(0, Math.floor(event.price * 3)), availability: Math.max(0, Math.floor(event.capacity * 0.1)), perks: ['Meet & greet', 'Exclusive access'] }
-      ]);
-    }
-  }, [event]);
+    const fetchEvent = async () => {
+      try {
+        setLoading(true);
+        const res = await eventApi.getById(id);
+        setEvent(res.data.data || res.data);
+      } catch (err) {
+        setError(err.response?.data?.message || err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvent();
+  }, [id]);
 
-  const orderedTickets = useMemo(() => {
-    return [...localTickets].sort((a, b) => TICKET_ORDER.indexOf(a.name) - TICKET_ORDER.indexOf(b.name));
-  }, [localTickets]);
-
-  if (!event) {
-    return (
-      <div className="min-h-[calc(100vh-280px)] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-800 mb-4">Event not found</h2>
-          <button onClick={() => navigate('/events')} className="text-primary-600 hover:text-primary-700">Back to Events</button>
-        </div>
-      </div>
-    );
-  }
-
-  const isPast = event.status === 'past';
-  const isOwner = isAuthenticated && user.role === 'organizer' && user.id === event.organizerId;
-
-  const openBooking = (ticket) => {
-    if (!isAuthenticated) {
-      alert('Please login to continue.');
-      navigate('/login');
-      return;
-    }
-    const allowed = ['attendee', 'organizer', 'admin'];
-    if (!allowed.includes(user.role)) {
-      alert('Your account is not permitted to book tickets.');
-      return;
-    }
+  // ✅ When user clicks Buy Ticket
+  const handleBuyTicket = (ticket) => {
+    console.log("Ticket clicked:", ticket); // Debug log
     setSelectedTicket(ticket);
     setQuantity(1);
-    setBookingOpen(true);
+    setShowModal(true);
+    console.log("Modal should open now"); // Debug log
   };
 
-  const totalPrice = selectedTicket ? selectedTicket.price * quantity : 0;
-
+  // ✅ Confirm booking → redirect to checkout
   const confirmBooking = () => {
-    // Simulated eSewa payment success
-    setLocalTickets((prev) => prev.map(t => t.name === selectedTicket.name ? { ...t, availability: Math.max(0, t.availability - quantity) } : t));
-    setBookingOpen(false);
-    setShowToast('Booking confirmed!');
-    setTimeout(() => setShowToast(''), 3000);
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: `/events/${id}` } });
+      return;
+    }
+
+    if (!selectedTicket) return;
+
+    setShowModal(false);
+
+    navigate("/checkout", {
+      state: {
+        eventId: event.id,
+        eventTitle: event.title,
+        ticketId: selectedTicket.id,
+        ticketName: selectedTicket.name,
+        price: selectedTicket.price,
+        quantity,
+        total: selectedTicket.price * quantity,
+      },
+    });
   };
 
-  const onDelete = () => {
-    if (!isOwner) return;
-    const ok = confirm('Delete this event? This action cannot be undone.');
-    if (!ok) return;
-    deleteEvent(event.id);
-    alert('Event deleted');
-    navigate('/events');
-  };
+  if (loading || ticketLoading)
+    return <div className="p-6 text-center text-gray-600">Loading...</div>;
+  if (error || ticketError)
+    return <div className="p-6 text-center text-red-600">{error || ticketError}</div>;
+
+  if (!event)
+    return <div className="p-6 text-gray-500 text-center">Event not found</div>;
 
   return (
-    <div className="min-h-[calc(100vh-280px)] bg-slate-50 py-12">
-      {showToast && (
-        <div className="fixed top-20 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded shadow">{showToast}</div>
-      )}
+    <div className="max-w-5xl mx-auto p-6 space-y-8">
+      {/* Event Header */}
+      <div className="flex flex-col md:flex-row gap-6">
+        <img
+          src={event.image || "/placeholder.jpg"}
+          alt={event.title}
+          className="w-full md:w-1/2 rounded-xl shadow-lg object-cover"
+        />
+        <div className="flex-1 space-y-3">
+          <h1 className="text-3xl font-bold">{event.title}</h1>
+          <p className="text-gray-600">{event.venue}</p>
+          <p className="text-gray-500">
+            {new Date(event.start_time).toLocaleDateString()}
+          </p>
+          <p className="text-gray-700">{event.description}</p>
 
-      <div className="container mx-auto px-4 max-w-5xl">
-        <button
-          onClick={() => navigate('/events')}
-          className="text-gray-600 hover:bg-gradient-to-r hover:from-purple-400 hover:via-pink-400 hover:to-orange-400 hover:bg-clip-text hover:text-transparent mb-6 flex items-center transition-all duration-300"
-        >
-          ← Back to Events
-        </button>
-
-        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-          <img src={event.image} alt={event.title} className="w-full h-96 object-cover" />
-
-          <div className="p-8">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
-              <div>
-                <span className="inline-block bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white text-sm font-semibold px-3 py-1 rounded-full uppercase">
-                  {event.category}
+          {event.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {event.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                >
+                  #{tag}
                 </span>
-                <h1 className="text-4xl font-bold text-slate-800 mt-3">{event.title}</h1>
-                <p className="text-sm text-slate-500 mt-1">Organized by {event.organizer}</p>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tickets Section */}
+      <div>
+        <h2 className="text-2xl font-semibold mb-4">Available Tickets</h2>
+        {tickets.length === 0 ? (
+          <p className="text-gray-500">No tickets available for this event.</p>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {tickets.map((ticket) => (
+              <div
+                key={ticket.id}
+                className="p-5 border rounded-xl shadow-sm hover:shadow-md transition"
+              >
+                <h3 className="font-semibold text-lg">{ticket.name}</h3>
+                <p className="text-gray-600 mt-1">Price: Rs. {ticket.price}</p>
+                <p className="text-gray-500 text-sm">
+                  Available: {ticket.remaining_quantity}
+                </p>
+
+                <button
+                  onClick={() => handleBuyTicket(ticket)}
+                  disabled={ticket.remaining_quantity === 0}
+                  className={`mt-3 w-full px-4 py-2 rounded-lg transition ${ticket.remaining_quantity === 0
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                >
+                  {ticket.remaining_quantity === 0 ? "Sold Out" : "Book Ticket"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Custom Modal Implementation - Not relying on Modal component */}
+      {showModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-2">Confirm Booking</h3>
+              <p className="text-gray-600 mb-4">
+                You're booking a <strong>{selectedTicket.name}</strong> ticket for{" "}
+                <strong>{event.title}</strong>.
+              </p>
+
+              <div className="space-y-3 mb-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Ticket Type:</span>
+                  <span className="font-semibold">{selectedTicket.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Price per ticket:</span>
+                  <span className="font-semibold">Rs. {selectedTicket.price}</span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className={`px-4 py-2 rounded-lg font-semibold ${event.status === 'upcoming' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                  {event.status}
+              <div className="mb-4 flex items-center gap-3">
+                <label htmlFor="quantity" className="text-gray-700">
+                  Quantity:
+                </label>
+                <input
+                  id="quantity"
+                  type="number"
+                  min={1}
+                  max={selectedTicket.remaining_quantity}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Math.min(selectedTicket.remaining_quantity, Number(e.target.value))))}
+                  className="border rounded-md px-3 py-1 w-20"
+                />
+                <span className="text-sm text-gray-500">
+                  (Max: {selectedTicket.remaining_quantity})
                 </span>
-                {isAuthenticated && (
-                  <div className="flex gap-2">
-                    {isOwner && (
-                      <>
-                        <button onClick={() => navigate(`/events/${event.id}/edit`)} className="px-3 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 text-sm">Edit Event</button>
-                        <button onClick={onDelete} className="px-3 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700 text-sm">Delete</button>
-                      </>
-                    )}
-                    {(user.role === 'admin' || isOwner) && (
-                      <button onClick={() => navigate('/attendees')} className="px-3 py-2 rounded-lg text-white bg-slate-700 hover:bg-slate-800 text-sm">View Registrations</button>
-                    )}
-                  </div>
-                )}
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="space-y-4 md:col-span-2">
-                <div className="flex items-start">
-                  <span className="text-2xl mr-3">📅</span>
-                  <div>
-                    <p className="text-sm text-slate-500">Date & Time</p>
-                    <p className="text-slate-800 font-medium">{event.date} at {event.time}</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <span className="text-2xl mr-3">🏛️</span>
-                  <div>
-                    <p className="text-sm text-slate-500">Venue</p>
-                    <p className="text-slate-800 font-medium">{event.location}</p>
-                  </div>
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-800 mb-2">About This Event</h2>
-                  <p className="text-slate-600 leading-relaxed">{event.description}</p>
+              <div className="border-t pt-3 mb-4">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total:</span>
+                  <span className="text-blue-600">
+                    Rs. {(selectedTicket.price * quantity).toLocaleString()}
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-sm text-slate-500">Capacity</p>
-                <p className="text-slate-800 font-medium">{event.registeredCount} / {event.capacity} registered</p>
-                <div className="w-full bg-slate-200 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(event.registeredCount / event.capacity) * 100}%` }} />
-                </div>
-              </div>
-            </div>
-
-            {/* Ticket Types */}
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold text-slate-800 mb-4">Tickets</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {orderedTickets.map((ticket) => (
-                  <div key={ticket.name} className="border rounded-lg p-5 hover:shadow-md transition bg-white">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-slate-800">{ticket.name}</h3>
-                      <span className={`text-xs px-2 py-1 rounded-full ${ticket.availability > 0 ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                        {ticket.availability > 0 ? `${ticket.availability} left` : 'Sold out'}
-                      </span>
-                    </div>
-                    <p className="text-blue-600 font-bold mb-2">NPR {ticket.price.toLocaleString()}</p>
-                    <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1 mb-4">
-                      {ticket.perks?.map((perk, idx) => (
-                        <li key={idx}>{perk}</li>
-                      ))}
-                    </ul>
-                    <button
-                      disabled={ticket.availability === 0 || isPast}
-                      onClick={() => openBooking(ticket)}
-                      className={`w-full py-2 rounded-lg font-semibold transition ${
-                        ticket.availability === 0 || isPast
-                          ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white hover:shadow-md'
-                      }`}
-                    >
-                      Book Now
-                    </button>
-                  </div>
-                ))}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmBooking}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Proceed to Checkout
+                </button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Booking Modal */}
-        <Modal
-          isOpen={bookingOpen}
-          onClose={() => setBookingOpen(false)}
-          title={selectedTicket ? `Book ${selectedTicket.name} Ticket` : 'Book Ticket'}
-          actions={
-            <>
-              <button onClick={() => setBookingOpen(false)} className="px-4 py-2 text-slate-600 hover:text-slate-800">Cancel</button>
-              <button onClick={() => {
-                if (!selectedTicket) return;
-                addItem({
-                  eventId: event.id,
-                  eventTitle: event.title,
-                  ticketName: selectedTicket.name,
-                  price: selectedTicket.price,
-                  quantity,
-                  image: event.image,
-                  date: event.date,
-                  time: event.time,
-                  location: event.location,
-                  organizer: event.organizer,
-                });
-                setBookingOpen(false);
-              }} className="px-6 py-2 bg-slate-200 rounded-lg hover:bg-slate-300">Add to Cart</button>
-              <button onClick={confirmBooking} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Pay with eSewa</button>
-            </>
-          }
-        >
-          {selectedTicket && (
-            <div className="space-y-4">
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <div className="flex justify-between">
-                  <span className="text-slate-700">Ticket Type</span>
-                  <span className="font-semibold">{selectedTicket.name}</span>
-                </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-slate-700">Price</span>
-                  <span className="font-semibold">NPR {selectedTicket.price.toLocaleString()}</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Quantity</label>
-                <div className="flex items-center gap-2">
-                  <button className="px-3 py-2 bg-slate-200 rounded" onClick={() => setQuantity(q => Math.max(1, q - 1))} disabled={quantity <= 1}>-</button>
-                  <input
-                    type="number"
-                    className="w-20 text-center border rounded px-2 py-2"
-                    min={1}
-                    max={selectedTicket.availability}
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, Math.min(selectedTicket.availability, Number(e.target.value) || 1)))}
-                  />
-                  <button className="px-3 py-2 bg-slate-200 rounded" onClick={() => setQuantity(q => Math.min(selectedTicket.availability, q + 1))} disabled={quantity >= selectedTicket.availability}>+</button>
-                  <span className="text-xs text-slate-500">Available: {selectedTicket.availability}</span>
-                </div>
-              </div>
-
-              <div className="border-t pt-4 flex justify-between text-lg font-semibold">
-                <span>Total</span>
-                <span className="text-red-600">NPR {totalPrice.toLocaleString()}</span>
-              </div>
-
-              <p className="text-xs text-slate-500 text-center">This is a simulated eSewa payment for demo purposes.</p>
-            </div>
-          )}
-        </Modal>
-      </div>
+      )}
     </div>
   );
 };

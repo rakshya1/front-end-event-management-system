@@ -1,95 +1,330 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import bookingApi from "../api/bookingApi";
 
 const Checkout = () => {
-  const { user, isAuthenticated } = useAuth();
-  const { items, breakdown, clearCart, applyPromo, promoCode } = useCart();
-  const [buyer, setBuyer] = useState({ name: user?.name || '', email: user?.email || '', phone: '' });
-  const [method, setMethod] = useState('esewa');
-  const [processing, setProcessing] = useState(false);
-  const [code, setCode] = useState(promoCode || '');
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-[calc(100vh-280px)] flex items-center justify-center">
-        <div className="bg-white p-8 rounded shadow text-center">
-          <p className="mb-4">Please login to continue checkout.</p>
-          <button onClick={() => navigate('/login')} className="px-6 py-2 bg-blue-600 text-white rounded">Login</button>
-        </div>
-      </div>
-    );
-  }
+  // Get booking data from navigation state
+  const bookingData = location.state;
 
-  const disabled = items.length === 0 || !buyer.name || !buyer.email || !buyer.phone;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState("esewa");
+  
+  // Editable contact information
+  const [contactInfo, setContactInfo] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+  });
 
-  const payNow = () => {
-    setProcessing(true);
-    setTimeout(() => {
-      const orderId = `ORD-${Date.now()}`;
-      clearCart();
-      navigate(`/order-success/${orderId}`, { state: { orderId, buyer, method, total: breakdown.total } });
-    }, 2000);
+  const [isEditingContact, setIsEditingContact] = useState(false);
+
+  useEffect(() => {
+    // Redirect if no booking data
+    if (!bookingData) {
+      navigate("/events");
+    }
+  }, [bookingData, navigate]);
+
+  useEffect(() => {
+    // Update contact info when user data changes
+    if (user) {
+      setContactInfo({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+      });
+    }
+  }, [user]);
+
+  const handleContactChange = (field, value) => {
+    setContactInfo(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
+  const handlePayment = async () => {
+    // Validate contact information
+    if (!contactInfo.name || !contactInfo.email || !contactInfo.phone) {
+      setError("Please fill in all contact information");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(contactInfo.email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    // Validate phone format (basic validation)
+    if (contactInfo.phone.length < 10) {
+      setError("Please enter a valid phone number");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Prepare booking payload
+      const payload = {
+        event_id: bookingData.eventId,
+        ticket_id: bookingData.ticketId,
+        quantity: bookingData.quantity,
+        total_price: bookingData.total,
+        payment_method: paymentMethod,
+        contact_info: contactInfo, // Include contact info
+      };
+
+      console.log("Creating booking:", payload);
+
+      // Call API to create booking
+      const response = await bookingApi.create(payload);
+
+      console.log("Booking created:", response.data);
+
+      // Show success and redirect
+      alert("Booking successful! Redirecting to your bookings...");
+      navigate("/my-bookings");
+    } catch (err) {
+      console.error("Booking error:", err);
+      setError(err.response?.data?.message || "Failed to complete booking. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!bookingData) {
+    return null; // Will redirect via useEffect
+  }
+
   return (
-    <div className="min-h-[calc(100vh-280px)] bg-slate-50 py-12">
-      <div className="container mx-auto px-4 max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold text-slate-800 mb-4">Checkout</h1>
-
-          <div className="mb-6">
-            <h2 className="font-semibold mb-2">Buyer Details</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input className="border rounded px-3 py-2" placeholder="Full name" value={buyer.name} onChange={e=>setBuyer({...buyer, name:e.target.value})} />
-              <input className="border rounded px-3 py-2" type="email" placeholder="Email" value={buyer.email} onChange={e=>setBuyer({...buyer, email:e.target.value})} />
-              <input className="border rounded px-3 py-2 md:col-span-2" placeholder="Phone (98xxxxxxxx)" value={buyer.phone} onChange={e=>setBuyer({...buyer, phone:e.target.value})} />
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h2 className="font-semibold mb-2">Payment Method</h2>
-            <div className="flex gap-3">
-              {['esewa','khalti','imepay'].map(m => (
-                <label key={m} className={`px-4 py-2 border rounded cursor-pointer ${method===m?'border-purple-500 bg-purple-50':''}`}>
-                  <input type="radio" className="mr-2" checked={method===m} onChange={()=>setMethod(m)} />
-                  {m.toUpperCase()}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="mb-2">
-            <h2 className="font-semibold mb-2">Promo Code</h2>
-            <div className="flex gap-2">
-              <input className="flex-1 border rounded px-3 py-2" placeholder="SAVE10 or NEPAL5" value={code} onChange={e=>setCode(e.target.value)} />
-              <button onClick={()=>applyPromo(code)} className="px-4 py-2 bg-slate-200 rounded">Apply</button>
-            </div>
-          </div>
-
-          <button disabled={disabled || processing} onClick={payNow} className={`mt-4 w-full py-3 rounded text-white font-semibold ${disabled || processing ? 'bg-slate-400' : 'bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:shadow'}`}>
-            {processing ? 'Processing...' : `Pay NPR ${breakdown.total.toLocaleString()} Now`}
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-gray-600 hover:text-gray-800 flex items-center gap-2 mb-4"
+          >
+            ← Back
           </button>
+          <h1 className="text-3xl font-bold text-gray-800">Checkout</h1>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-3">Order Summary</h2>
-          <div className="space-y-3 max-h-60 overflow-y-auto mb-4">
-            {items.map(i => (
-              <div key={i.key} className="border rounded p-3">
-                <div className="font-medium">{i.eventTitle} — {i.ticketName}</div>
-                <div className="text-sm text-slate-600">Qty {i.quantity} × NPR {i.price.toLocaleString()}</div>
-                <div className="text-sm">Total: NPR {(i.price*i.quantity).toLocaleString()}</div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="md:col-span-2 space-y-6">
+            {/* User Information */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Contact Information</h2>
+                <button
+                  onClick={() => setIsEditingContact(!isEditingContact)}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  {isEditingContact ? "Cancel" : "Edit"}
+                </button>
               </div>
-            ))}
+
+              {isEditingContact ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={contactInfo.name}
+                      onChange={(e) => handleContactChange("name", e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      value={contactInfo.email}
+                      onChange={(e) => handleContactChange("email", e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="your@email.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      value={contactInfo.phone}
+                      onChange={(e) => handleContactChange("phone", e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="98XXXXXXXX"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => setIsEditingContact(false)}
+                    className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm text-gray-600">Name</label>
+                    <p className="font-medium">{contactInfo.name || "N/A"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600">Email</label>
+                    <p className="font-medium">{contactInfo.email || "N/A"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600">Phone</label>
+                    <p className="font-medium">{contactInfo.phone || "N/A"}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Payment Method */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="esewa"
+                    checked={paymentMethod === "esewa"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-4 h-4"
+                  />
+                  <div className="flex-1">
+                    <p className="font-semibold">eSewa</p>
+                    <p className="text-sm text-gray-500">Pay with eSewa wallet</p>
+                  </div>
+                  <img
+                    src="https://esewa.com.np/common/images/esewa_logo.png"
+                    alt="eSewa"
+                    className="h-8"
+                  />
+                </label>
+
+                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="khalti"
+                    checked={paymentMethod === "khalti"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-4 h-4"
+                  />
+                  <div className="flex-1">
+                    <p className="font-semibold">Khalti</p>
+                    <p className="text-sm text-gray-500">Pay with Khalti wallet</p>
+                  </div>
+                  <img
+                    src="https://web.khalti.com/static/img/logo1.png"
+                    alt="Khalti"
+                    className="h-8"
+                  />
+                </label>
+
+                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="cash"
+                    checked={paymentMethod === "cash"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-4 h-4"
+                  />
+                  <div className="flex-1">
+                    <p className="font-semibold">Cash on Venue</p>
+                    <p className="text-sm text-gray-500">Pay at the event venue</p>
+                  </div>
+                </label>
+              </div>
+            </div>
           </div>
-          <div className="text-sm flex justify-between"><span>Subtotal</span><span>NPR {breakdown.subtotal.toLocaleString()}</span></div>
-          <div className="text-sm flex justify-between"><span>Service fee</span><span>NPR {breakdown.serviceFee.toLocaleString()}</span></div>
-          <div className="text-sm flex justify-between"><span>VAT</span><span>NPR {breakdown.vat.toLocaleString()}</span></div>
-          {breakdown.discount>0 && (<div className="text-sm flex justify-between text-green-700"><span>Discount</span><span>- NPR {breakdown.discount.toLocaleString()}</span></div>)}
-          <div className="border-t mt-2 pt-2 flex justify-between font-semibold"><span>Total</span><span className="text-red-600">NPR {breakdown.total.toLocaleString()}</span></div>
+
+          {/* Order Summary */}
+          <div className="md:col-span-1">
+            <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
+              <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+
+              <div className="space-y-3 mb-4">
+                <div>
+                  <p className="text-sm text-gray-600">Event</p>
+                  <p className="font-medium">{bookingData.eventTitle}</p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-600">Ticket Type</p>
+                  <p className="font-medium">{bookingData.ticketName}</p>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Price per ticket</span>
+                  <span className="font-medium">Rs. {bookingData.price}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Quantity</span>
+                  <span className="font-medium">{bookingData.quantity}</span>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mb-4">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total</span>
+                  <span className="text-blue-600">Rs. {bookingData.total.toLocaleString()}</span>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
+              <button
+                onClick={handlePayment}
+                disabled={loading || isEditingContact}
+                className={`w-full py-3 rounded-lg font-semibold transition ${
+                  loading || isEditingContact
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
+              >
+                {loading ? "Processing..." : `Pay Rs. ${bookingData.total.toLocaleString()}`}
+              </button>
+
+              {isEditingContact && (
+                <p className="text-xs text-orange-600 text-center mt-2">
+                  Please save your contact information first
+                </p>
+              )}
+
+              <p className="text-xs text-gray-500 text-center mt-4">
+                By completing this purchase, you agree to our terms and conditions.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
