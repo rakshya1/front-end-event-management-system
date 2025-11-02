@@ -23,6 +23,7 @@ import Attendees from './pages/Attendees';
 import EsewaRedirect from "./pages/EsewaRedirect";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailed from "./pages/PaymentFailed";
+import MyBookings from './pages/MyBookings';
 
 function App() {
   return (
@@ -88,6 +89,12 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+
+                  <Route path="/my-bookings" element={
+                    <ProtectedRoute>
+                      <MyBookings />
+                    </ProtectedRoute>
+                  } />
 
                   <Route path="/esewa-redirect" element={<EsewaRedirect />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />

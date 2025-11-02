@@ -30,13 +30,13 @@ const Navigation = () => {
               Events
             </Link>
 
-            {isAuthenticated && user.role === 'organizer' && (
+            {/* {isAuthenticated && user.role === 'organizer' && (
               <Link to="/create" className="transition hover:bg-gradient-to-r hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:bg-clip-text hover:text-transparent" style={{ color: '#6b7280' }}>
                 Create Event
               </Link>
-            )}
+            )} */}
 
-{isAuthenticated && user.role === 'admin' && (
+            {/* {isAuthenticated && user.role === 'admin' && (
               <>
                 <Link to="/admin" className="transition hover:bg-gradient-to-r hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:bg-clip-text hover:text-transparent" style={{ color: '#6b7280' }}>
                   Dashboard
@@ -45,24 +45,17 @@ const Navigation = () => {
                   Attendees
                 </Link>
               </>
-            )}
+            )} */}
 
-            {isAuthenticated && user.role === 'organizer' && (
+            {/* {isAuthenticated && user.role === 'organizer' && (
               <Link to="/attendees" className="transition hover:bg-gradient-to-r hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:bg-clip-text hover:text-transparent" style={{ color: '#6b7280' }}>
                 My Attendees
               </Link>
-            )}
+            )} */}
 
             {isAuthenticated && (
-              <Link to="/cart" className="relative">
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200">
-                  🛒
-                </span>
-                {items.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {items.length}
-                  </span>
-                )}
+              <Link to="/my-bookings" className="transition hover:bg-gradient-to-r hover:from-purple-500 hover:via-pink-500 hover:to-orange-500 hover:bg-clip-text hover:text-transparent" style={{ color: '#6b7280' }}>
+                My Bookings
               </Link>
             )}
 
