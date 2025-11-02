@@ -3,6 +3,8 @@ import { useFilters } from "../hooks/useEventFilters";
 const FilterPanel = ({ filters, onFilterChange }) => {
   const { categories, priceRange, loading } = useFilters();
 
+  console.log(categories);
+
   const handleFilterChange = (filterType, value) => {
     onFilterChange({ ...filters, [filterType]: value });
   };

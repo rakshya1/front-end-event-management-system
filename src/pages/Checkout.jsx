@@ -14,7 +14,7 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("esewa");
-  
+
   // Editable contact information
   const [contactInfo, setContactInfo] = useState({
     name: user?.name || "",
@@ -50,20 +50,17 @@ const Checkout = () => {
   };
 
   const handlePayment = async () => {
-    // Validate contact information
     if (!contactInfo.name || !contactInfo.email || !contactInfo.phone) {
       setError("Please fill in all contact information");
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(contactInfo.email)) {
       setError("Please enter a valid email address");
       return;
     }
 
-    // Validate phone format (basic validation)
     if (contactInfo.phone.length < 10) {
       setError("Please enter a valid phone number");
       return;
@@ -73,33 +70,38 @@ const Checkout = () => {
       setLoading(true);
       setError(null);
 
-      // Prepare booking payload
       const payload = {
         event_id: bookingData.eventId,
         ticket_id: bookingData.ticketId,
         quantity: bookingData.quantity,
         total_price: bookingData.total,
         payment_method: paymentMethod,
-        contact_info: contactInfo, // Include contact info
+        contact_info: contactInfo,
       };
 
-      console.log("Creating booking:", payload);
-
-      // Call API to create booking
       const response = await bookingApi.create(payload);
+      const data = response.data.data;
 
-      console.log("Booking created:", response.data);
+      console.log(data);
 
-      // Show success and redirect
-      alert("Booking successful! Redirecting to your bookings...");
-      navigate("/my-bookings");
+      if (paymentMethod === "esewa") {
+        // Redirect to eSewa using hidden form
+        navigate("/esewa-redirect", { state: data });
+      } else if (paymentMethod === "cash") {
+        alert("Your order has been placed successfully! Please pay at the venue.");
+        navigate("/my-bookings");
+      } else {
+        alert("Unsupported payment method.");
+      }
+
     } catch (err) {
-      console.error("Booking error:", err);
-      setError(err.response?.data?.message || "Failed to complete booking. Please try again.");
+      console.error(err);
+      setError(err.response?.data?.message || "Failed to complete booking.");
     } finally {
       setLoading(false);
     }
   };
+
 
   if (!bookingData) {
     return null; // Will redirect via useEffect
@@ -224,7 +226,7 @@ const Checkout = () => {
                   />
                 </label>
 
-                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                {/* <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
                   <input
                     type="radio"
                     name="payment"
@@ -242,7 +244,7 @@ const Checkout = () => {
                     alt="Khalti"
                     className="h-8"
                   />
-                </label>
+                </label> */}
 
                 <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
                   <input
@@ -305,11 +307,10 @@ const Checkout = () => {
               <button
                 onClick={handlePayment}
                 disabled={loading || isEditingContact}
-                className={`w-full py-3 rounded-lg font-semibold transition ${
-                  loading || isEditingContact
+                className={`w-full py-3 rounded-lg font-semibold transition ${loading || isEditingContact
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
+                  }`}
               >
                 {loading ? "Processing..." : `Pay Rs. ${bookingData.total.toLocaleString()}`}
               </button>

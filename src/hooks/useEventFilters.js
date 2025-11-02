@@ -11,7 +11,10 @@ export const useFilters = () => {
     const fetchFilters = async () => {
       setLoading(true);
       try {
-        const res = await filterApi.getFilters();
+        console.log('before filter');
+        const res = await filterApi.getFilterOptions();
+        console.log('here');
+        console.log(res);
         const data = res.data?.data || res.data;
 
         setCategories(data.categories.map(c => c.name));
@@ -24,6 +27,7 @@ export const useFilters = () => {
     };
 
     fetchFilters();
+    console.log('here it comes');
   }, []);
 
   return { categories, priceRange, loading, error };

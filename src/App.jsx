@@ -20,6 +20,9 @@ import Signup from './pages/Signup';
 import CreateEvent from './pages/CreateEvent';
 import Dashboard from './pages/Dashboard';
 import Attendees from './pages/Attendees';
+import EsewaRedirect from "./pages/EsewaRedirect";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailed from "./pages/PaymentFailed";
 
 function App() {
   return (
@@ -85,6 +88,10 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+
+                  <Route path="/esewa-redirect" element={<EsewaRedirect />} />
+                  <Route path="/payment-success" element={<PaymentSuccess />} />
+                  <Route path="/payment-failed" element={<PaymentFailed />} />
                 </Routes>
               </main>
               <Footer />
