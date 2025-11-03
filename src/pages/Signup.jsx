@@ -54,7 +54,7 @@ const Signup = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showSuccessModal, navigate]);
 
   return (
     <div className="min-h-[calc(100vh-280px)] flex items-center justify-center bg-slate-50 py-12 px-4">
@@ -123,8 +123,8 @@ const Signup = () => {
               onChange={handleChange}
               className="w-full px-4 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-transparent"
             >
-              <option value="attendee">Attendee</option>
-              <option value="organizer">Event Organizer</option>
+              <option value="attendee">🎫 Attendee - Browse and book events</option>
+              <option value="organizer">🎪 Event Organizer - Create and manage events</option>
             </select>
           </div> */}
 
