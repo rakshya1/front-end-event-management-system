@@ -3,7 +3,7 @@ import Modal from './Modal';
 
 const PaymentGateway = ({ isOpen, onClose, event, onPaymentSuccess }) => {
   const [processing, setProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('esewa');
+  const [paymentMethod, setPaymentMethod] = useState('khalti');
 
   const handlePayment = () => {
     setProcessing(true);
@@ -68,22 +68,7 @@ const PaymentGateway = ({ isOpen, onClose, event, onPaymentSuccess }) => {
             Select Payment Method
           </label>
           <div className="space-y-2">
-            <label className="flex items-center p-3 border-2 border-slate-300 rounded-lg cursor-pointer hover:border-purple-500 transition">
-              <input
-                type="radio"
-                name="payment"
-                value="esewa"
-                checked={paymentMethod === 'esewa'}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="mr-3"
-              />
-              <div className="flex items-center">
-                <span className="font-semibold text-green-700">eSewa</span>
-                <span className="ml-2 text-xs text-slate-500">(Popular in Nepal)</span>
-              </div>
-            </label>
-
-            <label className="flex items-center p-3 border-2 border-slate-300 rounded-lg cursor-pointer hover:border-purple-500 transition">
+            <label className="flex items-center p-3 border-2 border-purple-500 rounded-lg cursor-pointer hover:border-purple-600 transition bg-purple-50">
               <input
                 type="radio"
                 name="payment"
@@ -92,9 +77,26 @@ const PaymentGateway = ({ isOpen, onClose, event, onPaymentSuccess }) => {
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 className="mr-3"
               />
-              <div className="flex items-center">
+              <div className="flex items-center flex-1">
                 <span className="font-semibold text-purple-700">Khalti</span>
-                <span className="ml-2 text-xs text-slate-500">(Digital Wallet)</span>
+                <span className="ml-2 text-xs text-slate-500">(Recommended - Digital Wallet)</span>
+              </div>
+              <div className="flex items-center justify-center w-16 h-6 bg-purple-600 rounded px-2">
+                <span className="text-white font-bold text-xs">Khalti</span>
+              </div>
+            </label>
+
+            <label className="flex items-center p-3 border-2 border-slate-300 rounded-lg cursor-not-allowed opacity-50">
+              <input
+                type="radio"
+                name="payment"
+                value="esewa"
+                disabled
+                className="mr-3"
+              />
+              <div className="flex items-center">
+                <span className="font-semibold text-gray-500">eSewa</span>
+                <span className="ml-2 text-xs text-red-500">(Currently unavailable)</span>
               </div>
             </label>
 

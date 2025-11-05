@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 // import { useEvents } from "../context/EventContext";
 import { useEvents } from "../hooks/useEvents";
+import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
   const { events, loading, error } = useEvents();
+  const { user } = useAuth();
 
   if (loading) return <p className="text-center py-20">Loading events...</p>;
   if (error) return <p className="text-center py-20 text-red-500">{error}</p>;
@@ -33,12 +35,21 @@ const Home = () => {
             >
               Browse Events
             </Link>
-            <Link
-              to="/login"
-              className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition duration-300 shadow-md"
-            >
-              Get Started
-            </Link>
+            {!user ? (
+              <Link
+                to="/login"
+                className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition duration-300 shadow-md"
+              >
+                Get Started
+              </Link>
+            ) : (
+              <Link
+                to="/events"
+                className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition duration-300 shadow-md"
+              >
+                Explore Events
+              </Link>
+            )}
           </div>
         </div>
       </section>

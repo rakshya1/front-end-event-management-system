@@ -13,7 +13,7 @@ const Checkout = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState("esewa");
+  const [paymentMethod, setPaymentMethod] = useState("khalti");
 
   // Editable contact information
   const [contactInfo, setContactInfo] = useState({
@@ -84,12 +84,20 @@ const Checkout = () => {
 
       console.log(data);
 
-      if (paymentMethod === "esewa") {
-        // Redirect to eSewa using hidden form
-        navigate("/esewa-redirect", { state: data });
+      if (paymentMethod === "khalti") {
+        // KPG-2: Backend returns payment_url, redirect directly to Khalti
+        if (data.payment_url) {
+          console.log("Redirecting to Khalti payment:", data.payment_url);
+          window.location.href = data.payment_url; // Full page redirect to Khalti
+        } else {
+          setError("Failed to initiate Khalti payment. Please try again.");
+        }
       } else if (paymentMethod === "cash") {
         alert("Your order has been placed successfully! Please pay at the venue.");
         navigate("/my-bookings");
+      } else if (paymentMethod === "esewa") {
+        // Redirect to eSewa using hidden form
+        navigate("/esewa-redirect", { state: data });
       } else {
         alert("Unsupported payment method.");
       }
@@ -206,46 +214,26 @@ const Checkout = () => {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
               <div className="space-y-3">
-                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="esewa"
-                    checked={paymentMethod === "esewa"}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-4 h-4"
-                  />
-                  <div className="flex-1">
-                    <p className="font-semibold">eSewa</p>
-                    <p className="text-sm text-gray-500">Pay with eSewa wallet</p>
-                  </div>
-                  <img
-                    src="https://esewa.com.np/common/images/esewa_logo.png"
-                    alt="eSewa"
-                    className="h-8"
-                  />
-                </label>
-
-                {/* <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                {/* Khalti - Primary Payment Method */}
+                <label className="flex items-center gap-3 p-4 border-2 border-purple-500 rounded-lg cursor-pointer hover:bg-purple-50 transition">
                   <input
                     type="radio"
                     name="payment"
                     value="khalti"
                     checked={paymentMethod === "khalti"}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-4 h-4"
+                    className="w-4 h-4 text-purple-600"
                   />
                   <div className="flex-1">
-                    <p className="font-semibold">Khalti</p>
-                    <p className="text-sm text-gray-500">Pay with Khalti wallet</p>
+                    <p className="font-semibold text-purple-700">Khalti</p>
+                    <p className="text-sm text-gray-500">Pay with Khalti digital wallet</p>
                   </div>
-                  <img
-                    src="https://web.khalti.com/static/img/logo1.png"
-                    alt="Khalti"
-                    className="h-8"
-                  />
-                </label> */}
+                  <div className="flex items-center justify-center w-16 h-8 bg-purple-600 rounded px-2">
+                    <span className="text-white font-bold text-sm">Khalti</span>
+                  </div>
+                </label>
 
+                {/* Cash on Venue */}
                 <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
                   <input
                     type="radio"
@@ -258,6 +246,25 @@ const Checkout = () => {
                   <div className="flex-1">
                     <p className="font-semibold">Cash on Venue</p>
                     <p className="text-sm text-gray-500">Pay at the event venue</p>
+                  </div>
+                </label>
+
+                {/* eSewa */}
+                <label className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="esewa"
+                    checked={paymentMethod === "esewa"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-4 h-4 text-green-600"
+                  />
+                  <div className="flex-1">
+                    <p className="font-semibold text-green-700">eSewa</p>
+                    <p className="text-sm text-gray-500">Pay with eSewa digital wallet</p>
+                  </div>
+                  <div className="flex items-center justify-center w-16 h-8 bg-green-600 rounded px-2">
+                    <span className="text-white font-bold text-xs">eSewa</span>
                   </div>
                 </label>
               </div>

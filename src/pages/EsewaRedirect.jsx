@@ -12,6 +12,7 @@ const EsewaRedirect = () => {
             return;
         }
 
+        // Create and submit form
         const form = document.createElement("form");
         form.method = "POST";
         form.action = data.payment_url;
@@ -30,7 +31,6 @@ const EsewaRedirect = () => {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen text-center">
-            {/* <h1 className="text-2xl font-bold mb-4">Redirecting to eSewa...</h1> */}
             <div className="animate-pulse text-green-600">Connecting to eSewa…</div>
             <p>Please wait while we redirect you to the eSewa payment page.</p>
         </div>

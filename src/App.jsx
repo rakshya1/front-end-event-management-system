@@ -21,6 +21,7 @@ import CreateEvent from './pages/CreateEvent';
 import Dashboard from './pages/Dashboard';
 import Attendees from './pages/Attendees';
 import EsewaRedirect from "./pages/EsewaRedirect";
+import KhaltiRedirect from "./pages/KhaltiRedirect";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailed from "./pages/PaymentFailed";
 import MyBookings from './pages/MyBookings';
@@ -97,6 +98,7 @@ function App() {
                   } />
 
                   <Route path="/esewa-redirect" element={<EsewaRedirect />} />
+                  <Route path="/khalti-redirect" element={<KhaltiRedirect />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route path="/payment-failed" element={<PaymentFailed />} />
                 </Routes>

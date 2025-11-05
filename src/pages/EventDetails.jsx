@@ -85,19 +85,32 @@ const EventDetails = () => {
           className="w-full md:w-1/2 rounded-xl shadow-lg object-cover"
         />
         <div className="flex-1 space-y-3">
-          <h1 className="text-3xl font-bold">{event.title}</h1>
-          <p className="text-gray-600">{event.venue}</p>
-          <p className="text-gray-500">
-            {new Date(event.start_time).toLocaleDateString()}
-          </p>
-          <p className="text-gray-700">{event.description}</p>
+          <h1 className="text-3xl font-bold text-slate-800">{event.title}</h1>
+          <div className="flex items-center gap-2 text-slate-600">
+            <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="font-medium">{event.venue}</span>
+          </div>
+          <div className="flex items-center gap-2 text-slate-600">
+            <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span>{new Date(event.start_time).toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}</span>
+          </div>
 
           {event.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 pt-2">
               {event.tags.map((tag, idx) => (
                 <span
                   key={idx}
-                  className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                  className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium"
                 >
                   #{tag}
                 </span>
@@ -107,36 +120,101 @@ const EventDetails = () => {
         </div>
       </div>
 
-      {/* Tickets Section */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">Available Tickets</h2>
-        {tickets.length === 0 ? (
-          <p className="text-gray-500">No tickets available for this event.</p>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tickets.map((ticket) => (
-              <div
-                key={ticket.id}
-                className="p-5 border rounded-xl shadow-sm hover:shadow-md transition"
-              >
-                <h3 className="font-semibold text-lg">{ticket.name}</h3>
-                <p className="text-gray-600 mt-1">Price: Rs. {ticket.price}</p>
-                <p className="text-gray-500 text-sm">
-                  Available: {ticket.remaining_quantity}
-                </p>
+      {/* Event Description Section */}
+      <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+        <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          About This Event
+        </h2>
+        <div className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+          {event.description}
+        </div>
+      </div>
 
-                <button
-                  onClick={() => handleBuyTicket(ticket)}
-                  disabled={ticket.remaining_quantity === 0}
-                  className={`mt-3 w-full px-4 py-2 rounded-lg transition ${ticket.remaining_quantity === 0
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
+      {/* Tickets Section */}
+      <div className="bg-white rounded-2xl shadow-lg p-8 border border-slate-200">
+        <h2 className="text-3xl font-bold text-slate-800 mb-8">Select Tickets</h2>
+        
+        {tickets.length === 0 ? (
+          <div className="text-center py-12">
+            <svg className="w-20 h-20 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+            </svg>
+            <p className="text-slate-500 text-lg">No tickets available</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {tickets.map((ticket) => {
+              const isSoldOut = ticket.remaining_quantity === 0;
+              const isLowStock = ticket.remaining_quantity > 0 && ticket.remaining_quantity < 10;
+              
+              return (
+                <div
+                  key={ticket.id}
+                  className={`relative border rounded-xl p-6 transition-all duration-200 ${
+                    isSoldOut 
+                      ? 'bg-slate-50 border-slate-200 opacity-60' 
+                      : 'bg-white border-slate-300 hover:border-purple-400 hover:shadow-md'
+                  }`}
                 >
-                  {ticket.remaining_quantity === 0 ? "Sold Out" : "Book Ticket"}
-                </button>
-              </div>
-            ))}
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    {/* Left: Ticket Info */}
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-xl font-bold text-slate-800">{ticket.name}</h3>
+                        {isLowStock && !isSoldOut && (
+                          <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-md text-xs font-semibold ml-3">
+                            Only {ticket.remaining_quantity} left
+                          </span>
+                        )}
+                        {isSoldOut && (
+                          <span className="bg-red-100 text-red-700 px-3 py-1 rounded-md text-xs font-semibold ml-3">
+                            Sold Out
+                          </span>
+                        )}
+                      </div>
+                      
+                      {ticket.description && (
+                        <p className="text-slate-600 text-sm mb-3">{ticket.description}</p>
+                      )}
+                      
+                      <div className="flex items-center gap-4 text-sm text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          {ticket.remaining_quantity} / {ticket.quantity} available
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Right: Price & Button */}
+                    <div className="flex md:flex-col items-center md:items-end gap-4 md:gap-3 justify-between md:justify-start">
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-slate-800">
+                          ₹{ticket.price.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-slate-500">per ticket</div>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleBuyTicket(ticket)}
+                        disabled={isSoldOut}
+                        className={`px-8 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${
+                          isSoldOut
+                            ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-md hover:shadow-lg'
+                        }`}
+                      >
+                        {isSoldOut ? 'Sold Out' : 'Select'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
